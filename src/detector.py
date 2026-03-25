@@ -44,10 +44,13 @@ def is_construction_photo(
 
     # Criterion 2: date-range match (only evaluated when ranges are specified).
     if date_ranges:
-        creation_time: str = (
-            item.get("mediaMetadata", {}).get("creationTime", "") or ""
+        # Support Takeout format (photoTakenTime: "YYYY-MM-DD") and
+        # Google Photos API format (mediaMetadata.creationTime: RFC 3339).
+        date_str: str = (
+            item.get("photoTakenTime", "")
+            or (item.get("mediaMetadata") or {}).get("creationTime", "")[:10]
+            or ""
         )
-        date_str: str = creation_time[:10]  # "YYYY-MM-DD"
         if date_str:
             for start, end in date_ranges:
                 if start <= date_str <= end:

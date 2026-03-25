@@ -2,10 +2,52 @@
 
 A Python tool that automatically organises your Google Photos library by:
 
-1. **Tagging construction photos** — any photo whose filename or description contains a construction-related keyword (or falls within a configured date range) is added to a dedicated album (*Cauvery Nagar Home* by default).
-2. **Catching unalbumized photos** — every photo that does not belong to any album is collected into an *Uncategorized* album.
+1. **Tagging construction photos** — any photo whose filename or description contains a construction-related keyword (or falls within a configured date range) is identified for the *Cauvery Nagar Home* album.
+2. **Catching unalbumized photos** — every photo that does not belong to any album is identified for an *Uncategorized* album.
 
-All changes are **non-destructive** (photos are only added to albums, never deleted) and the tool defaults to **dry-run mode**, so you can preview what would happen before committing.
+The tool reads your library from a **Google Takeout export** (no API credentials required), classifies photos, and writes two **CSV reports** you can use to bulk-add photos to albums in the Google Photos web UI.
+
+All changes are **non-destructive** and the tool defaults to **dry-run mode**.
+
+---
+
+## Exporting from Google Takeout
+
+> This is the **only required step** before running the tool.
+
+1. Go to **https://takeout.google.com/**
+2. Click **Deselect all**
+3. Scroll down and tick **Google Photos** only
+4. Click **Next step**
+5. Choose:
+   - *Delivery method*: **Send download link via email**
+   - *Frequency*: **Export once**
+   - *File type*: **.zip**
+   - *File size*: **10 GB** (increase if your library is larger)
+6. Click **Create export**
+7. Wait for the email — this can take minutes to hours for large libraries
+8. Click the download link(s) and save the zip file(s)
+9. Extract the zip to a permanent folder, e.g. `C:\Takeout`
+
+After extraction the folder looks like this:
+```
+Takeout/
+  Google Photos/
+    Photos from 2020/          ← year folders (one per year)
+      IMG_001.jpg
+      IMG_001.jpg.json         ← metadata sidecar (filename, date, description)
+    Photos from 2021/
+      ...
+    My Album Name/             ← each album becomes its own folder
+      IMG_005.jpg
+      IMG_005.jpg.json
+```
+
+10. Open `config.py` and set:
+```python
+TAKEOUT_PATH = r"C:\Takeout"   # Windows
+# TAKEOUT_PATH = "/Users/you/Downloads/Takeout"  # Mac / Linux
+```
 
 ---
 
@@ -88,31 +130,30 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Dry run (default — safe preview, no changes made)
+### Dry run (default — safe preview, no changes to Google Photos)
 
 ```bash
-python main.py
+python src/main.py
 ```
 
-The first time you run this, a browser window will open asking you to authorise the app with your Google account.  After granting access a `token.json` file is created locally so subsequent runs skip the browser step.
+The tool will:
+1. Scan every photo in your Takeout export
+2. Detect construction photos (keywords + optional date range)
+3. Find photos not in any album
+4. Print a summary to the console
+5. Save two CSV reports inside the `reports/` folder:
+   - `reports/construction_photos.csv`
+   - `reports/unalbumized_photos.csv`
 
-The tool will print a summary of what it *would* do without actually modifying any albums.
+Each CSV row contains the filename, date, current album(s), and a **direct Google Photos URL** you can click to open the photo in your browser.
 
-### Apply changes
+### Applying changes manually (using the CSV reports)
 
-Open `config.py` and set:
-
-```python
-DRY_RUN = False
-```
-
-Then run:
-
-```bash
-python main.py
-```
-
-The tool will create the albums (if they don't already exist) and add the identified photos to them.
+1. Open `reports/construction_photos.csv` in Excel or any spreadsheet tool
+2. Click the `google_photos_url` links to open photos in Google Photos
+3. In the Google Photos web UI, multi-select photos and choose  
+   **Add to album → Cauvery Nagar Home**
+4. Repeat with `reports/unalbumized_photos.csv` → **Uncategorized**
 
 ---
 

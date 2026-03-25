@@ -2,6 +2,9 @@
 credentials.json
 token.json
 
+# Generated reports (contain local file paths)
+reports/
+
 # Python
 __pycache__/
 *.py[cod]

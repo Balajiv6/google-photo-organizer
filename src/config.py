@@ -74,6 +74,17 @@ else:
     CONSTRUCTION_DATE_RANGES: list[tuple[str, str]] = []
 
 # --------------------------------------------------------------------------- #
+#  Takeout import
+# --------------------------------------------------------------------------- #
+# Set this to the path of your extracted Google Takeout folder.
+# Windows example : TAKEOUT_PATH = r"C:\Users\you\Downloads\Takeout"
+# Mac/Linux example: TAKEOUT_PATH = "/Users/you/Downloads/Takeout"
+TAKEOUT_PATH: str = ""
+
+# Directory where CSV reports are saved (relative to project root or absolute).
+REPORT_DIR: str = "reports"
+
+# --------------------------------------------------------------------------- #
 #  API settings
 # --------------------------------------------------------------------------- #
 API_BASE: str = "https://photoslibrary.googleapis.com/v1"

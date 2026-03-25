@@ -10,7 +10,10 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 import config
 
-_SCOPES: list[str] = ["https://www.googleapis.com/auth/photoslibrary"]
+_SCOPES: list[str] = [
+    "https://www.googleapis.com/auth/photoslibrary.readonly",    # list / search all items & albums
+    "https://www.googleapis.com/auth/photoslibrary.appendonly",  # create albums & add existing items
+]
 
 # Credential files are kept at the project root (one level above this src/ dir).
 _PROJECT_ROOT: pathlib.Path = pathlib.Path(__file__).resolve().parent.parent
