@@ -37,9 +37,32 @@ All changes are **non-destructive** (photos are only added to albums, never dele
 
 1. Go to **APIs & Services → OAuth consent screen**.
 2. Choose **External** and click **Create**.
-3. Fill in the required fields (App name, support e-mail).
-4. Skip optional scopes for now — click **Save and Continue** through all steps.
-5. On the **Test users** page (step 4 of the wizard), click **Add Users** and add the Google account that owns the photo library you want to organise. Click **Save and Continue**.
+3. **App information page** — fill in:
+   - *App name* (e.g. `photos-organizer`)
+   - *User support email* (your Gmail address)
+   - *Developer contact information* email at the bottom
+   - Click **Save and Continue**.
+4. **Scopes page** — leave everything blank, click **Save and Continue**.
+5. **Test users page** — this is where most people get stuck:
+
+   > **If you see the page but no "+ Add Users" button:**  
+   > Scroll down — the button is below the description text, not at the top.
+
+   > **If the wizard skipped straight to "Summary":**  
+   > Go back to **APIs & Services → OAuth consent screen** in the left sidebar.  
+   > You will now see the consent screen dashboard. Look for the  
+   > **"Test users"** section — it has its own **+ ADD USERS** button  
+   > (separate from the wizard). Click it, type your Google account email,  
+   > press **Enter**, then click **Save**.
+
+   > **If you only see a "Publish App" button and no test users section:**  
+   > Your app may already be in *Testing* status (shown near the top of the  
+   > consent screen page). That's correct — stay in Testing. Click the  
+   > **"+ ADD USERS"** button that appears under the *Test users* heading.
+
+   Add the Gmail address that owns the Google Photos library you want to organise, then click **Save and Continue** (or **Save**).
+
+6. **Summary page** — click **Back to Dashboard**. You're done with the consent screen.
 
 ### 4. Create OAuth Desktop credentials
 
