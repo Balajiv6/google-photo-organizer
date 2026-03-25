@@ -27,4 +27,4 @@ env/
 .DS_Store
 Thumbs.db
 
-src/credentials.json
+credentials.json
