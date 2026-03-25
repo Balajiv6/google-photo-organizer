@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Google Photos Organizer</title>
+  <style>
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #238636;
+      --accent-h:  #2ea043;
+      --danger:    #da3633;
+      --warn-bg:   #261d04;
+      --warn-bdr:  #9e6a03;
+      --warn-text: #e3b341;
+      --ok-bg:     #0d2119;
+      --ok-bdr:    #238636;
+      --ok-text:   #3fb950;
+      --err-bg:    #160b0b;
+      --err-bdr:   #da3633;
+      --err-text:  #ff7b72;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 80px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      color: var(--muted);
+      max-width: 520px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      width: 100%;
+      max-width: 580px;
+    }
+
+    .card + .card { margin-top: 20px; }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field { margin-bottom: 14px; }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: var(--text);
+    }
+
+    .field input[type="text"],
+    .field input[type="password"] {
+      width: 100%;
+      padding: 7px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      transition: border-color .15s;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: #388bfd;
+      box-shadow: 0 0 0 3px rgba(56,139,253,.15);
+    }
+
+    .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    /* custom toggle */
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: #30363d;
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+    }
+    .toggle input:checked + .slider { background: var(--accent); }
+    .toggle input:checked + .slider::before { transform: translateX(18px); }
+
+    .toggle-label { font-size: 13px; }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 9px 16px;
+      margin-top: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid rgba(240,246,252,.1);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    button[type="submit"]:hover:not(:disabled) { background: var(--accent-h); }
+    button[type="submit"]:disabled { opacity: .5; cursor: not-allowed; }
+
+    .banner {
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .banner.warn  { background: var(--warn-bg); border: 1px solid var(--warn-bdr); color: var(--warn-text); }
+    .banner.ok    { background: var(--ok-bg);   border: 1px solid var(--ok-bdr);   color: var(--ok-text); }
+    .banner.error { background: var(--err-bg);  border: 1px solid var(--err-bdr);  color: var(--err-text); }
+
+    #status { display: none; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .steps li { margin-bottom: 6px; }
+
+    a { color: #58a6ff; }
+    a:hover { text-decoration: underline; }
+
+    hr { border: 0; border-top: 1px solid var(--border); margin: 8px 0 14px; }
+
+    .date-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 5px;
+    }
+
+    .date-row label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input[type="date"] {
+      width: 100%;
+      padding: 7px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      color-scheme: dark;
+    }
+
+    input[type="date"]:focus {
+      outline: none;
+      border-color: #388bfd;
+      box-shadow: 0 0 0 3px rgba(56,139,253,.15);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📷 Google Photos Organizer</h1>
+  <p>Trigger the GitHub Actions workflow to automatically organise your Google Photos library into albums.</p>
+</header>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- Status banner                                                        -->
+<!-- ------------------------------------------------------------------ -->
+<div class="card" id="status">
+  <div id="statusBanner" class="banner"></div>
+</div>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- Trigger form                                                         -->
+<!-- ------------------------------------------------------------------ -->
+<div class="card">
+  <h2>Run Organizer</h2>
+
+  <div class="banner warn">
+    ⚠️ Your Personal Access Token is sent directly to <strong>api.github.com</strong> over HTTPS.
+    It is stored in <strong>sessionStorage</strong> only (cleared when the tab closes) and never
+    transmitted to any third party.
+  </div>
+
+  <form id="triggerForm" novalidate>
+
+    <div class="field">
+      <label for="owner">GitHub Owner / Organisation</label>
+      <input type="text" id="owner" placeholder="Balajiv6" required />
+      <div class="hint">The account or org that owns the repository.</div>
+    </div>
+
+    <div class="field">
+      <label for="repo">Repository Name</label>
+      <input type="text" id="repo" placeholder="google-photo-organizer" required />
+    </div>
+
+    <div class="field">
+      <label for="branch">Branch</label>
+      <input type="text" id="branch" placeholder="main" required />
+    </div>
+
+    <div class="field">
+      <label for="pat">Personal Access Token (PAT)</label>
+      <input type="password" id="pat" placeholder="ghp_…" required />
+      <div class="hint">
+        Needs the <code>repo</code> scope (or <code>actions:write</code>).
+        <a href="https://github.com/settings/tokens/new?scopes=repo&description=photos-organizer-trigger" target="_blank" rel="noopener">
+          Create one here ↗
+        </a>
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <label class="toggle">
+        <input type="checkbox" id="dryRun" checked />
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">
+        <strong id="dryRunLabel">Dry Run ON</strong>
+        — preview only, no changes made
+      </span>
+    </div>
+
+    <hr />
+
+    <div class="field">
+      <label>Date Filter
+        <span style="font-weight:400;color:var(--muted)">(optional)</span>
+      </label>
+      <div class="date-row">
+        <div>
+          <label for="dateFrom">From</label>
+          <input type="date" id="dateFrom" />
+        </div>
+        <div>
+          <label for="dateTo">To</label>
+          <input type="date" id="dateTo" />
+        </div>
+      </div>
+      <div class="hint">
+        Overrides the keyword-match date filter. Leave both blank to use
+        <code>CONSTRUCTION_DATE_RANGES</code> from <code>config.py</code>.
+        If only <em>From</em> is set, <em>To</em> defaults to today.
+      </div>
+    </div>
+
+    <button type="submit" id="submitBtn">▶ Trigger Workflow</button>
+  </form>
+</div>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- Setup instructions                                                   -->
+<!-- ------------------------------------------------------------------ -->
+<div class="card">
+  <h2>First-time Setup</h2>
+  <p style="color:var(--muted); margin-bottom:14px;">
+    Complete these steps once before using the trigger above.
+  </p>
+
+  <ol class="steps">
+    <li>
+      <strong>Push this repository to GitHub</strong> with the
+      <code>.github/workflows/organize.yml</code> file included.
+    </li>
+    <li>
+      <strong>Run <code>python src/main.py</code> locally once</strong> (dry-run is fine)
+      to generate <code>token.json</code> via the browser OAuth flow.
+    </li>
+    <li>
+      Go to <strong>Settings → Secrets and variables → Actions</strong> and add two
+      repository secrets:
+      <ul style="margin-top:6px; padding-left:20px;">
+        <li><code>GOOGLE_CREDENTIALS_JSON</code> — paste the <em>entire</em> contents of <code>credentials.json</code></li>
+        <li><code>GOOGLE_TOKEN_JSON</code> — paste the <em>entire</em> contents of <code>token.json</code></li>
+      </ul>
+    </li>
+    <li>
+      Go to <strong>Settings → Pages</strong> and set the source to <em>Deploy from a branch</em>,
+      branch <code>main</code>, folder <code>/docs</code>. Your site will appear at
+      <code>https://&lt;owner&gt;.github.io/&lt;repo&gt;/</code>.
+    </li>
+    <li>
+      Create a
+      <a href="https://github.com/settings/tokens/new?scopes=repo&description=photos-organizer-trigger" target="_blank" rel="noopener">
+        Personal Access Token
+      </a>
+      with the <code>repo</code> scope and paste it into the form above.
+    </li>
+  </ol>
+</div>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- Script                                                               -->
+<!-- ------------------------------------------------------------------ -->
+<script>
+  'use strict';
+
+  const STORAGE_KEYS = { owner: 'gpo_owner', repo: 'gpo_repo', branch: 'gpo_branch' };
+
+  // ---- Restore saved (non-sensitive) values ----------------------------
+  ['owner', 'repo', 'branch'].forEach(id => {
+    const saved = sessionStorage.getItem(STORAGE_KEYS[id]);
+    if (saved) document.getElementById(id).value = saved;
+  });
+  // Pre-fill defaults for this repo if nothing is stored yet
+  if (!document.getElementById('owner').value)  document.getElementById('owner').value  = 'Balajiv6';
+  if (!document.getElementById('repo').value)   document.getElementById('repo').value   = 'google-photo-organizer';
+  if (!document.getElementById('branch').value) document.getElementById('branch').value = 'main';
+
+  // ---- Dry-run toggle label -------------------------------------------
+  const dryRunCheck = document.getElementById('dryRun');
+  const dryRunLabel = document.getElementById('dryRunLabel');
+  dryRunCheck.addEventListener('change', () => {
+    dryRunLabel.textContent = dryRunCheck.checked ? 'Dry Run ON' : 'Dry Run OFF';
+  });
+
+  // ---- Show status banner ---------------------------------------------
+  function showStatus(type, html) {
+    const card   = document.getElementById('status');
+    const banner = document.getElementById('statusBanner');
+    card.style.display = 'block';
+    banner.className   = `banner ${type}`;
+    banner.innerHTML   = html;
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ---- Form submit ----------------------------------------------------
+  document.getElementById('triggerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const owner    = document.getElementById('owner').value.trim();
+    const repo     = document.getElementById('repo').value.trim();
+    const branch   = document.getElementById('branch').value.trim() || 'main';
+    const pat      = document.getElementById('pat').value.trim();
+    const dryRun   = dryRunCheck.checked ? 'true' : 'false';
+    const dateFrom = document.getElementById('dateFrom').value;  // "YYYY-MM-DD" or ""
+    const dateTo   = document.getElementById('dateTo').value;
+
+    if (!owner || !repo || !pat) {
+      showStatus('error', '❌ Please fill in Owner, Repository, and Personal Access Token.');
+      return;
+    }
+
+    // Persist non-sensitive fields for convenience.
+    sessionStorage.setItem(STORAGE_KEYS.owner,  owner);
+    sessionStorage.setItem(STORAGE_KEYS.repo,   repo);
+    sessionStorage.setItem(STORAGE_KEYS.branch, branch);
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Triggering…';
+    showStatus('warn', '<span class="spinner"></span>Sending request to GitHub API…');
+
+    const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/workflows/organize.yml/dispatches`;
+
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept':        'application/vnd.github+json',
+          'Authorization': `Bearer ${pat}`,
+          'X-GitHub-Api-Version': '2022-11-28',
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          ref: branch,
+          inputs: {
+            dry_run:   dryRun,
+            date_from: dateFrom,
+            date_to:   dateTo,
+          },
+        }),
+      });
+
+      if (resp.status === 204) {
+        const actionsUrl = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions`;
+        showStatus('ok',
+          `✅ Workflow triggered successfully (dry_run=${dryRun}` +
+          (dateFrom ? `, dates: ${dateFrom} → ${dateTo || 'today'}` : '') +
+          `).<br/>` +
+          `<a href="${actionsUrl}" target="_blank" rel="noopener">View run on GitHub Actions ↗</a>`
+        );
+      } else {
+        let detail = '';
+        try { detail = (await resp.json()).message || ''; } catch (_) { /* ignore */ }
+        showStatus('error',
+          `❌ GitHub API returned HTTP ${resp.status}${detail ? ': ' + detail : ''}.<br/>` +
+          `Check that the PAT has the <code>repo</code> scope and the workflow file exists on the target branch.`
+        );
+      }
+    } catch (err) {
+      showStatus('error', `❌ Network error: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '▶ Trigger Workflow';
+    }
+  });
+</script>
+
+</body>
+</html>

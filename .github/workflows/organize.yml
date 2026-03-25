@@ -1,0 +1,95 @@
+name: Organise Google Photos
+
+on:
+  # Triggered manually from the GitHub UI or via the GitHub Pages site.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: >
+          Dry run — true = preview only (no changes made);
+          false = apply changes to your Google Photos library
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      date_from:
+        description: >
+          From date (YYYY-MM-DD, optional) — organise photos on or after this
+          date. Overrides CONSTRUCTION_DATE_RANGES in config.py when set.
+          Leave blank to use keyword matching only.
+        required: false
+        default: ""
+      date_to:
+        description: >
+          To date (YYYY-MM-DD, optional) — organise photos on or before this
+          date. Defaults to today when date_from is set but this is left blank.
+        required: false
+        default: ""
+
+  # Also triggerable via repository_dispatch (used by the GitHub Pages site).
+  repository_dispatch:
+    types: [organise]
+
+jobs:
+  organise:
+    name: Run google-photos-organizer
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ---------------------------------------------------------------------- #
+      # Write credential files from repository secrets.
+      #
+      # Required secrets (set in Settings → Secrets → Actions):
+      #   GOOGLE_CREDENTIALS_JSON — raw content of credentials.json
+      #   GOOGLE_TOKEN_JSON       — raw content of token.json
+      #   (generate token.json locally first, then paste its contents here)
+      # ---------------------------------------------------------------------- #
+      - name: Write Google credential files
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          GOOGLE_TOKEN_JSON: ${{ secrets.GOOGLE_TOKEN_JSON }}
+        run: |
+          printf '%s' "$GOOGLE_CREDENTIALS_JSON" > credentials.json
+          printf '%s' "$GOOGLE_TOKEN_JSON"        > token.json
+
+      - name: Run organiser
+        env:
+          # workflow_dispatch sets these inputs; repository_dispatch reads client_payload.
+          ORGANIZER_DRY_RUN: >-
+            ${{
+              github.event_name == 'workflow_dispatch'
+                && github.event.inputs.dry_run
+                || (github.event.client_payload.dry_run || 'true')
+            }}
+          ORGANIZER_DATE_FROM: >-
+            ${{
+              github.event_name == 'workflow_dispatch'
+                && github.event.inputs.date_from
+                || (github.event.client_payload.date_from || '')
+            }}
+          ORGANIZER_DATE_TO: >-
+            ${{
+              github.event_name == 'workflow_dispatch'
+                && github.event.inputs.date_to
+                || (github.event.client_payload.date_to || '')
+            }}
+        run: PYTHONPATH=src python src/main.py
+
+      # Clean up credential files so they are never cached in the runner.
+      - name: Remove credential files
+        if: always()
+        run: rm -f credentials.json token.json
